@@ -2,19 +2,24 @@ package searchit.webonise.com.searchit.view;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import searchit.webonise.com.searchit.R;
 import searchit.webonise.com.searchit.adapter.PlacesAdapter;
@@ -23,7 +28,10 @@ import searchit.webonise.com.searchit.network.RetroCallImplementor;
 import searchit.webonise.com.searchit.network.RetroCallIneractor;
 
 public class SearchActivity extends Activity implements View.OnClickListener {
-    String[] language = {"Indore", "ujjain", "Pune", "US", "iPhone", "Android", "ASP.NET", "PHP"};
+    public static final String PREFS_NAME = "PingBusPrefs";
+    public static final String PREFS_SEARCH_HISTORY = "SearchHistory";
+    private SharedPreferences settings;
+    private Set<String> history;
     private RecyclerView recyclerView;
     private ImageButton mBtn_select_place;
     AutoCompleteTextView actv;
@@ -47,21 +55,26 @@ public class SearchActivity extends Activity implements View.OnClickListener {
         progress = new ProgressDialog(this);
         progress.setCancelable(false);
         progress.setMessage(this.getResources().getString(R.string.progress_title));
-        final ArrayAdapter<String> adapter = new ArrayAdapter<String>
-                (this, android.R.layout.select_dialog_item, language);
-        //Getting the instance of AutoCompleteTextView
-        actv = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView1);
-        actv.setThreshold(1);//will start working from first character
-        actv.setAdapter(adapter);//setting the adapter data into the AutoCompleteTextView
-        actv.setTextColor(Color.BLUE);
-        actv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        settings = getSharedPreferences(PREFS_NAME, 0);
+        history = settings.getStringSet(PREFS_SEARCH_HISTORY, new HashSet<String>());
+        setAutoCompleteSource();
+        // Set the "Enter" event on the search input
+        final AutoCompleteTextView textView = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView);
+        textView.setOnKeyListener(new View.OnKeyListener()
+        {
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
 
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view,
-                                    int position, long id) {
-               progress.show();
-                retroCallImplementor.getAllPlaces(adapter.getItem(position).toString(), handler);
-
+                    if(progress!=null){
+                        progress.show();
+                    }
+                    retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                    addSearchInput(textView.getText().toString());
+                    return true;
+                }
+                return false;
             }
         });
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
@@ -73,7 +86,52 @@ public class SearchActivity extends Activity implements View.OnClickListener {
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(mAdapter);
     }
+    private void addSearchInput(String input)
+    {
+        if (!history.contains(input))
+        {
+            history.add(input);
+            setAutoCompleteSource();
+        }
+    }
+    private void setAutoCompleteSource()
+    {
+        actv = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView);
+        actv.setThreshold(1);//will start working from first character
+        actv.setTextColor(Color.BLUE);
+       final  ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_list_item_1, history.toArray(new String[history.size()]));
 
+        actv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                progress.show();
+                //savedSearch.
+                retroCallImplementor.getAllPlaces(adapter.getItem(position).toString(), handler);
+
+            }
+        });
+        actv.setOnKeyListener(new View.OnKeyListener()
+        {
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+
+                    addSearchInput(actv.getText().toString());
+                    if(progress!=null){
+                        progress.show();
+                    }
+                    retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                    return true;
+                }
+                return false;
+            }
+        });
+        actv.setAdapter(adapter);
+    }
     class Handleupdate implements RetroCallIneractor {
 
         @Override
@@ -102,7 +160,27 @@ public class SearchActivity extends Activity implements View.OnClickListener {
 
 
     }
+    private void savePrefs()
+    {
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putStringSet(PREFS_SEARCH_HISTORY, history);
 
+        editor.commit();
+    }
+    @Override
+    protected void onStop()
+    {
+        super.onStop();
+
+        savePrefs();
+    }
+
+    @Override
+    public void onBackPressed() {
+        savePrefs();
+        super.onBackPressed();
+    }
 
     @Override
     public void onClick(View view) {

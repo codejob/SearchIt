@@ -18,21 +18,6 @@ public class Utility {
         String url = ApiClient.BASE_URL+"photo?maxwidth="+maxSize+"&photoreference="+reference+"&key="+Constant.API_KEY_PLACES;
         return url;
     }
-    public List<String> getAllPhotos(List<Result> places){
-       List<String> photoReferences = new ArrayList<String>();
-        try {
-            for (Result result:places) {
 
-                if(result.getPhotos()!=null && result.getPhotos().size()>0 && result.getPhotos().get(0).getPhotoReference()!=null){
-                    photoReferences.add(result.getPhotos().get(0).getPhotoReference());
-                }
-
-
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return  photoReferences;
-    }
 
 }
