@@ -1,0 +1,8 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="place_list_item_textview_margin">20dp</dimen>
+    <dimen name="place_list_item_imageview_margin">10dp</dimen>
+    <dimen name="place_list_item_textview_testsize">18sp</dimen>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+</resources>
