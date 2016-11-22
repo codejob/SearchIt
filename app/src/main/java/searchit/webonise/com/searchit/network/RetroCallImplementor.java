@@ -22,10 +22,9 @@ import searchit.webonise.com.searchit.utils.Constant;
  */
 
 public class RetroCallImplementor {
-    List<Result> places = null;
 
-    public List<Result> getAllPlaces(String query , final RetroCallIneractor retroCallIneractor){
-        places = null;
+
+    public void getAllPlaces(String query , final RetroCallIneractor retroCallIneractor){
         ApiInterface apiService =
                 ApiClient.getClient().create(ApiInterface.class);
 
@@ -35,8 +34,8 @@ public class RetroCallImplementor {
             public void onResponse(Call<Places> call, Response<Places> response) {
                 int statusCode = response.code();
 
-                 places = response.body().getResults();
-                retroCallIneractor.updatePlaces(places);
+
+                retroCallIneractor.updatePlaces( response.body().getResults());
                 // recyclerView.setAdapter(new MoviesAdapter(movies, R.layout.list_item_movie, getApplicationContext()));
             }
 
@@ -47,10 +46,8 @@ public class RetroCallImplementor {
                 retroCallIneractor.onFailure();
             }
         });
-        return  places;
     }
-    public List<Result> getPlaceDetails(String placeId, final RetroCallIneractor retroCallIneractor){
-        places = null;
+    public void getPlaceDetails(String placeId, final RetroCallIneractor retroCallIneractor){
         ApiInterface apiService =
                 ApiClient.getClient().create(ApiInterface.class);
 
@@ -72,7 +69,6 @@ public class RetroCallImplementor {
                 retroCallIneractor.onFailure();
             }
         });
-        return  places;
     }
     class RetrieveFeedTask extends AsyncTask<Void, Void, String> {
 

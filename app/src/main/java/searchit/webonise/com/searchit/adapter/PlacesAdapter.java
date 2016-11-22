@@ -79,7 +79,6 @@ public class PlacesAdapter extends RecyclerView.Adapter<PlacesAdapter.MyViewHold
             string_location.append(location.getLat() + "," + location.getLng());
             intent.putExtra(Constant.KEY_INTENT_PLACEID, places.get(getPosition()).getPlaceId());
             mContext.startActivity(intent);
-            Toast.makeText(mContext, "clicked=" + getPosition(), Toast.LENGTH_SHORT).show();
         }
     }
 }

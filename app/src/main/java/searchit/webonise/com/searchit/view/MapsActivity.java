@@ -35,6 +35,7 @@ import searchit.webonise.com.searchit.model.placesdetails.Result;
 import searchit.webonise.com.searchit.network.RetroCallImplementor;
 import searchit.webonise.com.searchit.network.RetroCallIneractor;
 import searchit.webonise.com.searchit.utils.Constant;
+import searchit.webonise.com.searchit.utils.Utility;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
@@ -46,8 +47,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private RecyclerView recyclerView;
     private PlacesImagesAdapter mAdapter;
     private Result places = null;
-      GoogleApiClient mGoogleApiClient=null;
-    Location mLastLocation =null;
+    GoogleApiClient mGoogleApiClient = null;
+    Location mLastLocation = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,10 +75,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //recyclerView.setAdapter(mAdapter);
 
         retroCallImplementor = new RetroCallImplementor();
-        if (progress != null) {
-            progress.show();
-        }
+
+        if(Utility.isOnline(MapsActivity.this)){
+            if (progress != null) {
+                progress.show();
+            }
         retroCallImplementor.getPlaceDetails(placeID, handler);
+        }else{
+            Utility.showToast(MapsActivity.this,Utility.getString(MapsActivity.this,R.string.no_network));
+        }
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -86,6 +93,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .build();
         }
     }
+
     protected void onStart() {
         mGoogleApiClient.connect();
         super.onStart();
@@ -104,9 +112,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (SecurityException e) {
             e.printStackTrace();
         }
-        if (mLastLocation != null && mMap!=null) {
+        if (mLastLocation != null && mMap != null) {
             LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            setUpMapToCurrent(latLng,mMap);
+            setUpMapToCurrent(latLng, mMap);
         }
     }
 
@@ -120,6 +128,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    /*
+    Handle API calls
+     */
     class Handleupdate implements RetroCallIneractor {
 
         @Override
@@ -165,13 +176,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //setUpMap(mMap);
 //        // Add a marker in Sydney and move the camera
 //
-        if(mLastLocation!=null){
-        LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-       setUpMapToCurrent(latLng,mMap);
+        if (mLastLocation != null) {
+            LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            setUpMapToCurrent(latLng, mMap);
         }
     }
 
-    private boolean setUpMapToCurrent(LatLng latLng,GoogleMap googleMap) {
+    /*
+    Repositioning the camera of map to the current location.
+     */
+    private boolean setUpMapToCurrent(LatLng latLng, GoogleMap googleMap) {
         // Show the current location in Google Map
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
 

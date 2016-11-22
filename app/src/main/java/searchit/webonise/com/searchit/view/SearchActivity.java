@@ -26,6 +26,7 @@ import searchit.webonise.com.searchit.adapter.PlacesAdapter;
 import searchit.webonise.com.searchit.model.placesdetails.Result;
 import searchit.webonise.com.searchit.network.RetroCallImplementor;
 import searchit.webonise.com.searchit.network.RetroCallIneractor;
+import searchit.webonise.com.searchit.utils.Utility;
 
 public class SearchActivity extends Activity implements View.OnClickListener {
     public static final String PREFS_NAME = "PingBusPrefs";
@@ -51,6 +52,9 @@ public class SearchActivity extends Activity implements View.OnClickListener {
 
     }
 
+    /*
+   Initiliazing the all the views here and setting the click listeners
+     */
     private void initView() {
         progress = new ProgressDialog(this);
         progress.setCancelable(false);
@@ -60,17 +64,21 @@ public class SearchActivity extends Activity implements View.OnClickListener {
         setAutoCompleteSource();
         // Set the "Enter" event on the search input
         final AutoCompleteTextView textView = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView);
-        textView.setOnKeyListener(new View.OnKeyListener()
-        {
+        textView.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                         (keyCode == KeyEvent.KEYCODE_ENTER)) {
 
-                    if(progress!=null){
-                        progress.show();
+
+                    if (Utility.isOnline(SearchActivity.this)) {
+                        if (progress != null) {
+                            progress.show();
+                        }
+                        retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                    } else {
+                        Utility.showToast(SearchActivity.this, Utility.getString(SearchActivity.this, R.string.no_network));
                     }
-                    retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
                     addSearchInput(textView.getText().toString());
                     return true;
                 }
@@ -80,51 +88,68 @@ public class SearchActivity extends Activity implements View.OnClickListener {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mBtn_select_place = (ImageButton) findViewById(R.id.button_select_place);
         mBtn_select_place.setOnClickListener(this);
-        mAdapter = new PlacesAdapter(places,SearchActivity.this);
+        mAdapter = new PlacesAdapter(places, SearchActivity.this);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(mAdapter);
     }
-    private void addSearchInput(String input)
-    {
-        if (!history.contains(input))
-        {
+
+    private void addSearchInput(String input) {
+        if (!history.contains(input)) {
             history.add(input);
             setAutoCompleteSource();
         }
     }
-    private void setAutoCompleteSource()
-    {
+
+    /*
+    handle all the events for the Autocompletetextview.
+     */
+    private void setAutoCompleteSource() {
         actv = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView);
         actv.setThreshold(1);//will start working from first character
         actv.setTextColor(Color.BLUE);
-       final  ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this, android.R.layout.simple_list_item_1, history.toArray(new String[history.size()]));
-
+           /*
+         When user selects any item fromt he suggeted search
+          */
         actv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
-                progress.show();
-                //savedSearch.
-                retroCallImplementor.getAllPlaces(adapter.getItem(position).toString(), handler);
+                if (Utility.isOnline(SearchActivity.this)) {
+                    progress.show();
+                    //savedSearch.
+                    retroCallImplementor.getAllPlaces(adapter.getItem(position).toString(), handler);
+                }else{
+                    Utility.showToast(SearchActivity.this, Utility.getString(SearchActivity.this, R.string.no_network));
+                }
 
             }
         });
-        actv.setOnKeyListener(new View.OnKeyListener()
-        {
+        /*
+        This will handle the Enter buttom click so that to search the
+        places thta user enter in the textview.
+         */
+        actv.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                         (keyCode == KeyEvent.KEYCODE_ENTER)) {
 
                     addSearchInput(actv.getText().toString());
-                    if(progress!=null){
-                        progress.show();
+
+
+                    if (Utility.isOnline(SearchActivity.this)) {
+                        if (progress != null) {
+                            progress.show();
+                        }
+                        retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                    } else {
+                        Utility.showToast(SearchActivity.this, Utility.getString(SearchActivity.this, R.string.no_network));
                     }
-                    retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
                     return true;
                 }
                 return false;
@@ -132,16 +157,21 @@ public class SearchActivity extends Activity implements View.OnClickListener {
         });
         actv.setAdapter(adapter);
     }
+
+    /*
+    This will handle the response from the API
+    we are setting the adapter here and update the recycler view.
+     */
     class Handleupdate implements RetroCallIneractor {
 
         @Override
         public void updatePlaces(List<Result> places) {
-            if(progress!=null && progress.isShowing()){
+            if (progress != null && progress.isShowing()) {
                 progress.dismiss();
             }
             SearchActivity.this.places = places;
             mAdapter.notifyDataSetChanged();
-            mAdapter = new PlacesAdapter(places,SearchActivity.this);
+            mAdapter = new PlacesAdapter(places, SearchActivity.this);
             recyclerView.setAdapter(mAdapter);
         }
 
@@ -153,24 +183,27 @@ public class SearchActivity extends Activity implements View.OnClickListener {
 
         @Override
         public void onFailure() {
-            if(progress!=null && progress.isShowing()){
+            if (progress != null && progress.isShowing()) {
                 progress.dismiss();
             }
         }
 
 
     }
-    private void savePrefs()
-    {
+
+    /*
+    Save the user searches so as to use when app reopen.
+     */
+    private void savePrefs() {
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putStringSet(PREFS_SEARCH_HISTORY, history);
 
         editor.commit();
     }
+
     @Override
-    protected void onStop()
-    {
+    protected void onStop() {
         super.onStop();
 
         savePrefs();
@@ -186,11 +219,15 @@ public class SearchActivity extends Activity implements View.OnClickListener {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.button_select_place:
-               if(progress!=null){
-                   progress.show();
-               }
-                retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                if (progress != null) {
+                    progress.show();
+                }
 
+                if (Utility.isOnline(SearchActivity.this)) {
+                    retroCallImplementor.getAllPlaces(actv.getText().toString(), handler);
+                } else {
+                    Utility.showToast(SearchActivity.this, Utility.getString(SearchActivity.this, R.string.no_network));
+                }
         }
     }
 }

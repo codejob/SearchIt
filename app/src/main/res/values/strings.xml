@@ -2,4 +2,12 @@
     <string name="app_name">SearchIt</string>
     <string name="title_activity_maps">Map</string>
     <string name="progress_title">Searching..</string>
+    <string name="download_progress_title">Downloading..</string>
+    <string name="sdcard_not_present">Sdcard Not found</string>
+    <string name="download_complete">"Download Complete"</string>
+    <string name="download_fail">"Download Fail"</string>
+    <string name="file_exist">"Image alreay Downloaded"</string>
+    <string name="no_network">"Please Check internet settings"</string>
+
+
 </resources>
